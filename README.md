@@ -92,7 +92,5 @@ ingested into the knowledge base:
    catheter-based treatment.
 
 
-
-  hallucinate).
 - This is an educational prototype, not a medical device — outputs should not be used for
   clinical decision-making.
