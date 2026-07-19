@@ -1,0 +1,218 @@
+{
+  "name": "Indexing",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "a3tini infos",
+        "formDescription": "informations about congenital heart diseases",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "info",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f8724067-eb88-4f1a-a9c2-42ec07144208",
+      "name": "On form submission",
+      "webhookId": "8192956f-e95b-4a5d-a672-443921cd0b62"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "joinPages": false
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c1f08c87-2317-4370-94a3-7671da8e163e",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst output = [];\n\nfor (const key of Object.keys(item.binary || {})) {\n  output.push({\n    json: { fileName: item.binary[key].fileName },\n    binary: { data: item.binary[key] }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "255ab733-0190-4f91-8567-725f42b922c3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "congenitalHD",
+          "mode": "list",
+          "cachedResultName": "congenitalHD"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "058b44e0-082d-4ff2-a78c-54cab557a5af",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "tt4dbcBjnlRQeqZd",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1024
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        256
+      ],
+      "id": "70346d4a-45ff-41e2-bc63-af002f780e7b",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "PqMqltWnabqvpB8d",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        160
+      ],
+      "id": "41b751ee-57cb-4413-bf83-8fb54583363f",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        336
+      ],
+      "id": "d67a97a5-6649-4d1d-bcaa-bcea24c03611",
+      "name": "Recursive Character Text Splitter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "53d80e05-ad1c-4138-925b-0a68452b6744",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8447ca0ede621fe6401b5938e501470a0745131eb2b07ff17a7dbc7d7a2028d0"
+  },
+  "nodeGroups": [],
+  "id": "rVpFEesgYJvrHCX7",
+  "tags": []
+}
