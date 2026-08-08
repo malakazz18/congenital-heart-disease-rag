@@ -1,96 +1,151 @@
-# Congenital Heart Disease RAG Assistant — n8n Mini Project
+# 🫀 Congenital Heart Disease RAG Assistant
 
-An AI assistant built in n8n that answers questions about congenital heart disease using
-Retrieval-Augmented Generation (RAG). Users upload PDFs through an n8n Form, the content is
-chunked and embedded into a Qdrant vector store, and a chat interface retrieves relevant
-context to answer user questions grounded in the source documents.
+> A Retrieval-Augmented Generation (RAG) assistant that answers questions about congenital heart disease using information retrieved from reference documents.
 
-## Design Choices
+![Project Preview](docs/demo.png)
 
-The pipeline chunks source PDFs with a **Recursive Character Text Splitter** (chunk size:
-**1000 characters**, overlap: **~100 characters**) to balance
-retaining enough context per chunk while preserving continuity across chunk boundaries.
-Text is embedded using OpenAI's **text-embedding-3-small** model (**1024-dimensional**
-vectors) and stored in a **Qdrant** vector database. At query time, the user's question is
-embedded and matched against stored vectors via Qdrant's **similarity search** (top-k
-retrieval, default k=4), returning the most relevant chunks as context. This context is
-injected into a system prompt sent to **gpt-4o-mini**, which generates the final answer.
-Generation settings were left at n8n/OpenAI defaults (**temperature: 0.7, top_p: 1**).
+## ✨ Overview
 
-## Pipeline Overview
+This project explores how Retrieval-Augmented Generation can be used to build a domain-specific AI assistant.
 
-```
-Form Trigger (multi-PDF upload)
-   → Code node (splits binary properties into separate items)
-   → Extract from File (PDF text extraction)
-   → Default Data Loader + Recursive Character Text Splitter (chunking)
-   → Embeddings OpenAI (text-embedding-3-small)
-   → Qdrant Vector Store (ingestion)
+Instead of relying only on the language model's internal knowledge, the application retrieves relevant passages from a curated document collection and provides them to the LLM as context before generating an answer.
 
-Chat Trigger (user question)
-   → Qdrant Vector Store (retrieval, top-k similarity search)
-   → Edit Fields (extract document.pageContent → context)
-   → Aggregate (combine chunks into one array)
-   → Basic LLM Chain (gpt-4o-mini, system prompt + retrieved context)
-   → Chat response
-```
+**Important:** This is an educational prototype and is **not a medical device**. It must not be used for diagnosis or clinical decision-making.
 
-## Chunking Strategy
+## 🧠 How It Works
 
-| Setting | Value |
-|---|---|
-| Algorithm | Recursive Character Text Splitter |
-| Chunk size | 1000 characters |
-| Chunk overlap | ~100 characters  |
-
-## Embedding Model
-
-| Setting | Value |
-|---|---|
-| Model | `text-embedding-3-small` (OpenAI) |
-| Dimensions | 1024 |
-
-## Retrieval Method
-
-Similarity search against the Qdrant vector store, returning the top-k most relevant chunks
-(default k=4) based on cosine similarity between the query embedding and stored document
-embeddings.
-
-## Generation Settings
-
-| Setting | Value |
-|---|---|
-| Model | `gpt-4o-mini` |
-| Temperature | 0.7 (default) |
-| top_p | 1 (default) |
-| top_k | N/A (not used by OpenAI Chat Completions API) |
-
-## System Prompt
-
-```
-You are a congenital heart disease specialist assistant. Use the following retrieved context
-to answer the user's question accurately. If the answer isn't in the context, say so.
-
-Context:
-{{ $json.context.join("\n\n---\n\n") }}
+```text
+                    DOCUMENT INGESTION
+                           │
+                           ▼
+                    PDF Documents
+                           │
+                           ▼
+                    Text Extraction
+                           │
+                           ▼
+                 Recursive Chunking
+                           │
+                           ▼
+                   OpenAI Embeddings
+                           │
+                           ▼
+                    Qdrant Vector DB
+                           │
+                           │
+                    USER QUESTION
+                           │
+                           ▼
+                   Query Embedding
+                           │
+                           ▼
+                Similarity Search (Top-k)
+                           │
+                           ▼
+                  Retrieved Context
+                           │
+                           ▼
+                     GPT-4o-mini
+                           │
+                           ▼
+                    Final Response
 ```
 
-## Documents Used
+## 🛠️ Tech Stack
 
-Four reference documents on congenital heart disease and related cardiac conditions were
-ingested into the knowledge base:
+| Technology     | Purpose                   |
+| -------------- | ------------------------- |
+| n8n            | Workflow orchestration    |
+| OpenAI         | Embeddings + LLM          |
+| Qdrant         | Vector database           |
+| RAG            | Retrieval architecture    |
+| GPT-4o-mini    | Response generation       |
+| Docker         | Containerized environment |
+| PDF extraction | Document ingestion        |
 
-1. **Congenital Heart Defect** (Wikipedia) — overview of CHD types, causes, genetics,
-   diagnosis (including newborn pulse oximetry screening), classification, and treatment.
-2. **What Is Congenital Heart Disease?** (Cleveland Clinic) — patient-facing explainer
-   covering cyanotic vs. acyanotic CHD, symptoms, causes, complications, diagnosis, and
-   treatment/prognosis.
-3. **Cardiomyopathy** (Wikipedia) — overview of hypertrophic, dilated, restrictive, and
-   other cardiomyopathy types, causes, symptoms, diagnosis, and classification.
-4. **Atrial Septal Defect** (Wikipedia) — detailed breakdown of ASD types (ostium secundum,
-   primum, sinus venosus), patent foramen ovale, complications, diagnosis, and surgical vs.
-   catheter-based treatment.
+## 🔍 RAG Pipeline
+
+### 1. Document ingestion
+
+Reference PDFs are uploaded through an n8n form.
+
+### 2. Text processing
+
+Documents are extracted and split using a Recursive Character Text Splitter.
+
+* Chunk size: `1000`
+* Chunk overlap: `~100`
+
+### 3. Embeddings
+
+Text chunks are converted into vector embeddings using:
+
+`text-embedding-3-small`
+
+### 4. Vector storage
+
+Embeddings are stored in Qdrant.
+
+### 5. Retrieval
+
+When a user asks a question, the query is embedded and compared against the stored vectors.
+
+The system retrieves the most relevant chunks.
+
+### 6. Generation
+
+The retrieved context is passed to GPT-4o-mini, which generates the final answer.
+
+## 📚 Knowledge Base
+
+The prototype uses four reference documents covering:
+
+* Congenital heart disease
+* Cardiomyopathy
+* Atrial septal defects
+* Patient-oriented CHD information
+
+## ⚙️ Configuration
+
+The workflow is provided as n8n JSON exports.
+
+You will need:
+
+* n8n
+* OpenAI API credentials
+* Qdrant
+* The required reference documents
+
+## 📸 Demo
+
+<img width="505" height="356" alt="Capture d&#39;écran 2026-07-19 151046" src="https://github.com/user-attachments/assets/cb36c0da-4079-4706-9efd-b004b8870c61" />
+<img width="837" height="323" alt="Capture d&#39;écran 2026-07-19 135827" src="https://github.com/user-attachments/assets/d688add5-28d5-4549-9324-7ffb5cb077af" />
+<img width="1794" height="377" alt="Capture d&#39;écran 2026-07-19 151053" src="https://github.com/user-attachments/assets/3eb0cd85-40d1-412e-a360-102dece27084" />
 
 
-- This is an educational prototype, not a medical device — outputs should not be used for
-  clinical decision-making.
+
+##  What I Learned
+
+* RAG architecture
+* Document ingestion
+* Text chunking
+* Embeddings
+* Vector similarity search
+* Vector databases
+* Prompt construction
+* Workflow orchestration with n8n
+* Docker-based environments
+
+##  Future Improvements
+
+* Add citation/source retrieval to responses
+* Add RAG evaluation metrics
+* Compare different chunking strategies
+* Experiment with different embedding models
+* Add conversation memory
+* Build a dedicated frontend
+* Deploy the complete application
+
+## ⚠️ Disclaimer
+
+This project is an educational AI prototype. It is not intended for medical diagnosis, treatment, or clinical decision-making.
