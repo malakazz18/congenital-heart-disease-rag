@@ -2,8 +2,6 @@
 
 > A Retrieval-Augmented Generation (RAG) assistant that answers questions about congenital heart disease using information retrieved from reference documents.
 
-![Project Preview](docs/demo.png)
-
 ## ✨ Overview
 
 This project explores how Retrieval-Augmented Generation can be used to build a domain-specific AI assistant.
